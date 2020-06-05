@@ -12,7 +12,8 @@
 <body>
   <section class="section">
     <div class="content">
-      {{ model_output }}
+      <p class="content">These are the list of users that your walk is most similar to:</p>
+      {{ model_output | safe }}
     </div>
   </section>
 

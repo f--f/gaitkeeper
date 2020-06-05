@@ -16,8 +16,8 @@
     <div class="container">
     <h1 class="title">gaitkeeper demo</h1>
     <form action="/upload" id="upload_form" method="post">
-      <input type="hidden" name="Gyroscope">
-      <input type="hidden" name="LinearAcceleration">
+      <input type="hidden" name="gyroscope">
+      <input type="hidden" name="linearaccelerometer">
     </form>
     <div class="content">
       <button id="startbtn" class="button">Start Recording</button>
@@ -90,11 +90,11 @@
       document.getElementById(`${id}Z`).innerHTML = val[2]
     }
 
-    const sampling_frequency = 60  // 100 samples a second (10 ms intervals)
-    const sensor_absorient = new AbsoluteOrientationSensor({ frequency: sampling_frequency })
+    const sampling_frequency = 60
+    // const sensor_absorient = new AbsoluteOrientationSensor({ frequency: sampling_frequency })
     const sensor_linacc = new LinearAccelerationSensor({ frequency: sampling_frequency })
     const sensor_gyro = new Gyroscope({ frequency: sampling_frequency })
-    
+   
     // Store all sensor data in this object
     const data = {}
 
@@ -111,10 +111,11 @@
         data[label].time.push(sensor.timestamp)
         data[label].value.push(output)
 
+        // Note including this code dramatically slows things down
         if (plotdiv) {
           Plotly.extendTraces(plotdiv, 
             {x: [[sensor.timestamp], [sensor.timestamp], [sensor.timestamp]], 
-             y: [[output[0]], [output[1]], [output[2]]]}, [0,1,2], 60*10)
+             y: [[output[0]], [output[1]], [output[2]]]}, [0,1,2], 60*5)
         }
       }
       sensor.onerror = event => {
@@ -138,8 +139,8 @@
 
           // Start sensor measurements
           // setupSensor(sensor_absorient, "Orientation")
-          setupSensor(sensor_gyro, "Gyroscope")
-          setupSensor(sensor_linacc, "LinearAcceleration", plotdiv)
+          setupSensor(sensor_gyro, "gyroscope")
+          setupSensor(sensor_linacc, "linearaccelerometer", plotdiv)
 
           // Enable stop button
           stopbtn.disabled = false
@@ -160,8 +161,8 @@
         sensor_linacc.stop()
 
         // Send sensor data
-        document.forms['upload_form']['Gyroscope'].value = JSON.stringify(data['Gyroscope'])
-        document.forms['upload_form']['LinearAcceleration'].value = JSON.stringify(data['LinearAcceleration'])
+        document.forms['upload_form']['gyroscope'].value = JSON.stringify(data['gyroscope'])
+        document.forms['upload_form']['linearaccelerometer'].value = JSON.stringify(data['linearaccelerometer'])
       }
     )
 
