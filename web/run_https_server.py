@@ -8,4 +8,5 @@ httpd.socket = ssl.wrap_socket(httpd.socket,
                                certfile="cert.pem",
                                keyfile="key.pem",
                                ssl_version=ssl.PROTOCOL_TLS)
+print("Starting server on https://localhost:4443...")
 httpd.serve_forever()
