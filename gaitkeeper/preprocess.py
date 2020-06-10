@@ -8,16 +8,18 @@ from tqdm.auto import tqdm
 
 f_s = 60  # Sampling rate of 60 Hz
 
-def generate_walk_chunks(df, chunksize=512, is_valid=True):
+def generate_walk_chunks(df, chunksize=512, window_step=256, is_valid=True):
     """Split df into multiple chunks of data. If is_valid is True, only yields non-NAN data (e.g. ignores sensor skips).
     Chunk size recommended to be power-of-2 for downstream FFT: https://www.oreilly.com/library/view/elegant-scipy/9781491922927/ch04.html
+    window_step controls the amount the window slides (if equal chunksize, then no overlaps between chunks.)
     """
+    assert window_step < chunksize
     count = 0
-    while count < (len(df) - chunksize):
+    while count < (len(df) - chunksize):  # While there are still chunksize rows remaining
         subdf = df.iloc[count:count + chunksize, :]
-        if not subdf.isna().any(axis=None):  # Return only non-NA
+        if len(subdf) == chunksize and not subdf.isna().any(axis=None):  # Return only non-NA
             yield subdf
-        count += chunksize
+        count += window_step
 
 
 def normalize_sensor_data(df, logtype):
