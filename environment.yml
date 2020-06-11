@@ -1,0 +1,19 @@
+name: insight
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - jupyterlab
+  - pandas
+  - seaborn
+  - scikit-learn
+  - tqdm
+  - ipywidgets
+  - flask
+  - ipympl
+  - cudatoolkit=10.2
+  - pytorch
+  - torchvision
+  - numba
+prefix: C:\Users\Fred\Miniconda3\envs\insight
+
