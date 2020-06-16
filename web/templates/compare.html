@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% set active_page = "compare" %}
+{% block content %}
+  <p class="content">
+    Compare recorded walks by selecting two recordings in the following dropdown menus:
+  </p>
+  <div class="content" id="similarityScore" style="width: 200px; height: 100px; margin-left: auto; margin-right: auto"></div>
+  <!-- <p class="content">Your similarity is {{ similarity }}!</p> -->
+  <form action="/score" id="score_form" method="post">
+    <div class="field">
+      <label class="label">Walk 1</label>
+      <div class="control">
+        <div class="select is-fullwidth">
+          <select>
+            {% for walk_name in walk_names %} 
+              <option>{{ walk_name }}</option>
+            {% endfor %} 
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label class="label">Walk 2</label>
+      <div class="control">
+        <div class="select is-fullwidth">
+          <select>
+            {% for walk_name in walk_names %} 
+              <option>{{ walk_name }}</option>
+            {% endfor %} 
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="field is-grouped is-grouped-centered">
+      <div class="control">
+        <button type="submit" form="score_form" id="scorebtn" class="button">Calculate Similarity Score</button>
+      </div>
+    </div>
+  </form>
+  <script>
+    var bar = new ProgressBar.SemiCircle("#similarityScore", {
+      strokeWidth: 6,
+      color: '#FFEA82',
+      trailColor: '#eee',
+      trailWidth: 1,
+      easing: 'easeInOut',
+      duration: 2000,
+      svgStyle: null,
+      text: {
+        value: '',
+        alignToBottom: false
+      },
+      from: {color: '#FFEA82'},
+      to: {color: '#48c774'},
+      // Set default step function for all animate calls
+      step: (state, bar) => {
+        bar.path.setAttribute('stroke', state.color);
+        var value = Math.round(bar.value() * 100);
+        if (value === 0) {
+          bar.setText('');
+        } else {
+          bar.setText(value+"%");
+        }
+        bar.text.style.color = state.color;
+      }
+    })
+    bar.text.style.fontSize = '2rem';
+    {% if similarity %}
+      bar.animate({{ similarity }})
+    {% endif %}
+  </script>
+{% endblock %}

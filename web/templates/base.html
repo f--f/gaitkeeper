@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Gᴀɪtkeeper</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
+  <link rel="stylesheet" href="https://cdn.materialdesignicons.com/5.3.45/css/materialdesignicons.min.css">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/nosleep/0.11.0/NoSleep.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/kimmobrunfeldt/progressbar.js@1.1.0/dist/progressbar.min.js"></script>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+
+<body>
+  <!-- TODO: Add warning if user agent is not mobile Google Chrome. -->
+  <section class="section">
+    <div class="container">
+    <h1 class="title"><span class="mdi mdi-walk"></span>G<span style="font-variant:small-caps">ai</span>tkeeper</h1>
+    <h2 class="subtitle">authenticate with your walk</h2>
+    
+    <div class="tabs is-centered is-boxed">
+      <ul>
+        <li class="{{ 'is-active' if active_page == 'about' else '' }}">
+          <a href="/">
+            <span class="icon is-small"><i class="mdi mdi-help-circle-outline"></i></span>
+            <span>About</span>
+          </a>
+        </li>
+        <li class="{{ 'is-active' if active_page == 'record' else '' }}">
+          <a href="{{ url_for('record_page') }}">
+            <span class="icon is-small"><i class="mdi mdi-walk"></i></span>
+            <span>Record</span>
+          </a>
+        </li>
+        <li class="{{ 'is-active' if active_page == 'compare' else '' }}">
+          <a href="{{ url_for('compare_page') }}">
+            <span class="icon is-small"><i class="mdi mdi-compare-horizontal"></i></span>
+            <span>Compare</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+    
+    {% block content %}
+    {% endblock %}
+
+    <hr>
+    
+    <p class="content is-small has-text-right">
+        <i>G<span style="font-variant:small-caps">ai</span>tkeeper was created by Fred Fu for the Insight Data Science Fellowship.</i>
+    </p>
+    </div>
+  </section>
+
+</body>
+
+</html>

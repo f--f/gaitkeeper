@@ -1,59 +1,18 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
+{% set active_page = "about" %}
+{% block content %}
+  <p class="content">
+    <i>G<span style="font-variant:small-caps">ai</span>tkeeper</i> is a web app that simulates gait-based user authentication by allowing users to record their walk and compare it to the walks of others.
+    It uses your phone's accelerometer and gyroscope to record data walk data, embeds that data to a unique feature space using a convolutional neural network, and calculates similarity scores between different walks.
+  </p>
+  <div id="plot" style="width:100%; height:250px;"></div>
+  <p class="content">
+    Please note this site is compatible only with mobile devices with accelerometer and gyroscope hardware running Google Chrome due to its support for <a href="https://developer.mozilla.org/en-US/docs/Web/API/Sensor_APIs">Web Sensor APIs</a>.
+    If your device is supported, you will see the chart above update with real-time acceleration values.
+    Otherwise, you will still be able to compare recorded walks but will not be able to record them.
+  </p>
 
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Sensor Recording Demo</title>
-  <meta name="description" content="">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/nosleep/0.11.0/NoSleep.min.js"></script> 
-</head>
-
-<body>
-  <section class="section">
-    <div class="container">
-    <h1 class="title">gaitkeeper demo</h1>
-    <form action="/upload" id="upload_form" method="post">
-      <input type="hidden" name="gyroscope">
-      <input type="hidden" name="linearaccelerometer">
-    </form>
-    <div class="content">
-      <button id="startbtn" class="button">Start Recording</button>
-      <button type="submit" form="upload_form" id="stopbtn" class="button" disabled>Stop and Upload</button>
-    </div>
-    <div id="plot" style="width:100%; height:250px;"></div>
-    <!-- <p>(Tap once to keep screen on while recording)</p>
-    <h4>LinearAccelerationSensor</h4>
-    <ul>
-      <li>Timestamp: <span id="LinearAccelerationTime">OFF</span></li>
-      <li>X-axis: <span id="LinearAccelerationX">OFF</span> m/s²</li>
-      <li>Y-axis: <span id="LinearAccelerationY">OFF</span> m/s²</li>
-      <li>Z-axis: <span id="LinearAccelerationZ">OFF</span> m/s²</li>
-    </ul>
-    <h4>Gyroscope</h4>
-    <ul>
-      <li>Timestamp: <span id="GyroscopeTime">OFF</span></li>
-      <li>X-axis: <span id="GyroscopeX">OFF</span> rad/s</li>
-      <li>Y-axis: <span id="GyroscopeY">OFF</span> rad/s</li>
-      <li>Z-axis: <span id="GyroscopeZ">OFF</span> rad/s</li>
-    </ul>
-    <h4>AbsoluteOrientationSensor</h4>
-    <ul>
-      <li>Timestamp: <span id="OrientationTime">OFF</span></li>
-      <li>X-axis: <span id="OrientationX">OFF</span>°</li>
-      <li>Y-axis: <span id="OrientationY">OFF</span>°</li>
-      <li>Z-axis: <span id="OrientationZ">OFF</span>°</li>
-    </ul> -->
-    </div>
-  </section>
-
-  <script type="module">
-    /* noSleep is for preventing screen lock while walking
-      Need to bind the listener to a record button */
-    const noSleep = new NoSleep()
-
+  <script>
     // Initialize empty plot
     const plotdiv = document.getElementById('plot')
     const plotdata = [{  // data is an array of traces
@@ -78,44 +37,34 @@
     const layout = {
       margin: { l: 20, r: 20, t: 30, b: 30 },
       title: "Linear Acceleration",
+    }
+    const config = {
       displayModeBar: false,
+      staticPlot: true,
     }
-    Plotly.newPlot(plotdiv, plotdata, layout)
+    Plotly.newPlot(plotdiv, plotdata, layout, config)
 
-    // Create sensors
-    function updateSensorMeasurement(time, val, id) {
-      document.getElementById(`${id}Time`).innerHTML = time
-      document.getElementById(`${id}X`).innerHTML = val[0]
-      document.getElementById(`${id}Y`).innerHTML = val[1]
-      document.getElementById(`${id}Z`).innerHTML = val[2]
-    }
-
-    const sampling_frequency = 60
-    // const sensor_absorient = new AbsoluteOrientationSensor({ frequency: sampling_frequency })
+    const sampling_frequency = 20
     const sensor_linacc = new LinearAccelerationSensor({ frequency: sampling_frequency })
-    const sensor_gyro = new Gyroscope({ frequency: sampling_frequency })
-   
-    // Store all sensor data in this object
-    const data = {}
+
 
     function setupSensor(sensor, label, plotdiv) {
       // Initialize empty array for this sensor
-      data[label] = {time: [], value: []}
-
       const isQuaternion = 'quaternion' in sensor
+      let firstTimestamp
+      let currentTimestamp
+      
       sensor.onreading = () => {
         let output = isQuaternion ? sensor.quaternion : [sensor.x, sensor.y, sensor.z] 
 
-        // updateSensorMeasurement(sensor.timestamp, output, label)
+        if (firstTimestamp == null) firstTimestamp = sensor.timestamp
+        currentTimestamp = sensor.timestamp - firstTimestamp
 
-        data[label].time.push(sensor.timestamp)
-        data[label].value.push(output)
-
-        // Note including this code dramatically slows things down
+        // Note including this code dramatically slows down sensor frequency availability, so can't use it while live recording
         if (plotdiv) {
           Plotly.extendTraces(plotdiv, 
-            {x: [[sensor.timestamp], [sensor.timestamp], [sensor.timestamp]], 
-             y: [[output[0]], [output[1]], [output[2]]]}, [0,1,2], 60*5)
+            {x: [[currentTimestamp], [currentTimestamp], [currentTimestamp]], 
+             y: [[output[0]], [output[1]], [output[2]]]}, [0,1,2], 60*1)
         }
       }
       sensor.onerror = event => {
@@ -126,47 +75,6 @@
       sensor.start()
     }
 
-    // Bind buttons to sensor logic
-    const startbtn = document.getElementById('startbtn')
-    const uploadform = document.getElementById('upload_form')
-    var isRecording = false
-
-    startbtn.addEventListener('click', 
-      function() {
-        if (!isRecording) {
-          // Stop screen display from turning off
-          noSleep.enable()
-
-          // Start sensor measurements
-          // setupSensor(sensor_absorient, "Orientation")
-          setupSensor(sensor_gyro, "gyroscope")
-          setupSensor(sensor_linacc, "linearaccelerometer", plotdiv)
-
-          // Enable stop button
-          stopbtn.disabled = false
-          startbtn.innerHTML = "Reset Recording"
-          isRecording = true
-        } else {
-          window.location.reload(false)
-        }
-      }
-    )
-
-    // Include sensor data upon submission
-    uploadform.addEventListener('submit',
-      function() {
-        noSleep.disable()
-
-        sensor_gyro.stop()
-        sensor_linacc.stop()
-
-        // Send sensor data
-        document.forms['upload_form']['gyroscope'].value = JSON.stringify(data['gyroscope'])
-        document.forms['upload_form']['linearaccelerometer'].value = JSON.stringify(data['linearaccelerometer'])
-      }
-    )
-
+    setupSensor(sensor_linacc, "linearaccelerometer", plotdiv)
   </script>
-</body>
-
-</html>
+{% endblock %}
