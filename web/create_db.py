@@ -10,13 +10,15 @@ from getpass import getpass
 import sys
 
 
-def connect_to_db(host, database, user):
+def connect_to_db(host, database, user, password=None):
     """Return a PostgreSQL database connection."""
     try:
-        conn = psycopg2.connect(host=host,
-                        database=database,
-                        user=user,
-                        password=getpass(f"Enter password for user [{user}]: "))
+        conn = psycopg2.connect(
+            host=host,
+            database=database,
+            user=user,
+            password=password if password is not None else getpass(f"Enter password for user [{user}]: ")
+        )
         return conn
     except psycopg2.OperationalError:
         print("** Failed to connect to database! ** Error: \n")

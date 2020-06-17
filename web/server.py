@@ -1,5 +1,7 @@
-"""Run with:
-env FLASK_ENV=development FLASK_APP=server.py flask run
+"""
+Flask web server for Gaitkeeper web app.
+Ensure environment variables GAITKEEPER_DB_HOST and GAITKEEPER_DB_PASSWORD are set if deploying to AWS.
+Start server on AWS with: gunicorn server:app -D
 """
 
 from flask import Flask, render_template, request
@@ -25,7 +27,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 # Pre-app initialization (load relevant data into memory):
 host = os.getenv("GAITKEEPER_DB_HOST", "localhost")
 model = models.load_embedding_model("../models/Classification-trained_EmbeddingNet.pt")
-conn = connect_to_db(host, "gaitkeeper", "postgres")
+conn = connect_to_db(host, "gaitkeeper", "postgres", os.getenv("GAITKEEPER_DB_PASSWORD", None))
 
 # Create the application object
 app = Flask(__name__)
