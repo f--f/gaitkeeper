@@ -112,9 +112,9 @@ def calculate_similarity():
     walk2_id = int(request.form["walk2"])
     walk1_embedding = get_walk_embedding(walk1_id)
     walk2_embedding = get_walk_embedding(walk2_id)
-    similarity = cosine_similarity(walk1_embedding, walk2_embedding).mean()
-    # TODO: Return stddev
-    return compare_page(similarity=similarity, selected_walk_ids=(walk1_id, walk2_id))
+    similarity = cosine_similarity(walk1_embedding, walk2_embedding)
+    return compare_page(similarity=(similarity.mean(), similarity.std()), 
+                        selected_walk_ids=(walk1_id, walk2_id))
 
 
 @app.route("/upload", methods=["POST"])

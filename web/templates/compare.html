@@ -4,7 +4,7 @@
   <p class="content">
     Compare recorded walks by selecting two recordings in the following dropdown menus:
   </p>
-  <div class="content" id="similarityScore" style="width: 200px; height: 100px; margin-left: auto; margin-right: auto"></div>
+  <div class="content" id="similarityScore" style="width: 250px; height: 125px; margin-left: auto; margin-right: auto"></div>
   <!-- <p class="content">Your similarity is {{ similarity }}!</p> -->
   <form action="/score" id="score_form" method="post">
     <div class="field">
@@ -38,6 +38,22 @@
     </div>
   </form>
   <script>
+    // Define variables for progress bar which will change depending on score from server
+    var fromColor, toColor
+    var similarity, std
+    {% if similarity %}
+      similarity = {{ similarity[0] }}
+      std = {{ similarity[1] }}
+      {% if similarity[0] >= 0.8 %}
+        // successful
+        fromColor = '#FFEA82'
+        toColor = '#48c774'
+      {% elif similarity[0] < 0.8 %}
+        fromColor = '#FFEA82'
+        toColor = '#ffca09'
+      {% endif %}
+    {% endif %}
+
     var bar = new ProgressBar.SemiCircle("#similarityScore", {
       strokeWidth: 6,
       color: '#FFEA82',
@@ -57,20 +73,16 @@
         if (value === 0) {
           bar.setText('');
         } else {
-          bar.setText(value+"%");
+          bar.setText(`${value}% ±${Math.round(std * 100)}`);
         }
         bar.text.style.color = state.color;
       }
     })
-    bar.text.style.fontSize = '2rem';
-    {% if similarity and similarity >= 0.8 %}
-      bar.animate({{ similarity }},
-        {from: {color: '#FFEA82'}, to: {color: '#48c774'}}
-      )
-    {% elif similarity and similarity < 0.8 %}
-    bar.animate({{ similarity }},
-        {from: {color: '#FFEA82'}, to: {color: '#FFEA82'}}
-      )
+    bar.text.style.fontSize = '1.6rem';
+    
+    {% if similarity %}
+      bar.animate(similarity, {from: {color: fromColor}, to: {color: toColor}})
     {% endif %}
+
   </script>
 {% endblock %}
