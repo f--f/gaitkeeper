@@ -62,3 +62,17 @@ def read_form_data(formdata, hz=60):
         # import pdb; pdb.set_trace()
     merged_df = pd.concat(dfs, axis="columns")
     return _resample_merged_data(merged_df, hz=hz)
+
+
+def get_walk_data_from_database(conn, walk_id, hz=50, pad=3, truncate_seconds=0):
+    dfs = []
+    for sensor in ("linearaccelerometer", "gyroscope"):
+        df = pd.read_sql_query(f"SELECT * FROM {sensor} WHERE walk_id={walk_id} ORDER BY timestamp ASC", conn)
+        # DOMHighResTimeStamp is stored in milliseconds
+        df = df.drop(columns=["walk_id", f"{sensor}_id"])
+        df["timestamp"] = pd.to_timedelta(df["timestamp"], unit="ms")
+        df = df.set_index("timestamp")
+        dfs.append(df)
+    merged_df = pd.concat(dfs, axis="columns")
+    # Assume data comes in truncated (based on instructions from web app)
+    return _resample_merged_data(merged_df, hz=hz, pad=pad, truncate_seconds=truncate_seconds)

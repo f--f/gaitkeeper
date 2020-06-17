@@ -1,3 +1,7 @@
+"""Run with:
+env FLASK_ENV=development FLASK_APP=server.py flask run
+"""
+
 from flask import Flask, render_template, request
 from psycopg2 import sql
 from psycopg2.extras import execute_values
@@ -8,17 +12,20 @@ import json
 from datetime import datetime
 
 # Use hacky relative module import until I create a proper package
-# import sys
-# sys.path.append("../gaitkeeper")
-# import load
-# import preprocess
-# import model
+import os
+import sys
+sys.path.append("../gaitkeeper")
+from load import get_walk_data_from_database
+from torch.utils.data import DataLoader
+from preprocess import generate_walk_chunks
+import models
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 # Pre-app initialization (load relevant data into memory):
-conn = connect_to_db("gaitkeeper", "postgres")
-print("Loading reference dataset...")
-# df_ref = preprocess.create_reference_data_features_from_fft_peaks(10)
+host = os.getenv("GAITKEEPER_DB_HOST", "localhost")
+model = models.load_embedding_model("../models/Classification-trained_EmbeddingNet.pt")
+conn = connect_to_db(host, "gaitkeeper", "postgres")
 
 # Create the application object
 app = Flask(__name__)
@@ -58,6 +65,20 @@ def commit_recording_to_db(formdata):
     return walk_id
 
 
+def get_walk_embedding(walk_id):
+    # Convert walk data to a dataset
+    df = get_walk_data_from_database(conn, walk_id, hz=50, pad=3, truncate_seconds=3)
+    # Normalize sensor data
+    for logtype in ("linearaccelerometer", "gyroscope"):
+        df[f"{logtype}_mag"] = np.linalg.norm(df[[f"{logtype}_x", f"{logtype}_y", f"{logtype}_z"]].values, axis=1)
+        df[f"{logtype}_mag"] = (df[f"{logtype}_mag"] - df[f"{logtype}_mag"].mean()) / (df["linearaccelerometer_mag"].quantile(q=0.99) - df["linearaccelerometer_mag"].quantile(q=0.01))
+    df["user_id"] = -1  # Use filler user ID value
+    chunks = list(generate_walk_chunks(df, chunksize=128, window_step=128))
+    dataset = models.GaitDataset(chunks)
+    dataloader = DataLoader(dataset, batch_size=64)
+    return models.extract_embeddings(dataloader, model)
+
+
 @app.route("/", methods=["GET"])
 def home_page():
     return render_template("index.html")
@@ -71,19 +92,26 @@ def record_page():
 @app.route("/compare", methods=["GET"])
 def compare_page(similarity=None):
     # Get list of recorded walks
-    df_walks = pd.read_sql_query(f"SELECT name, date FROM walks ORDER BY date DESC", conn)
+    df_walks = pd.read_sql_query(f"SELECT * FROM walks ORDER BY walk_id DESC", conn).set_index("walk_id")
     df_walks = df_walks[df_walks["name"] != ""]  # Ignore walks with no name
-    walk_names = df_walks["date"].astype(str) + " - " + df_walks["name"]
+    df_walks["frontend_name"] = df_walks["date"].astype(str) + " - " + df_walks["name"]
     return render_template("compare.html", 
-        walk_names=walk_names,
+        walk_dict=df_walks["frontend_name"].to_dict(),
         similarity=similarity
     )
 
 
 @app.route("/score", methods=["POST"])
 def calculate_similarity():
+    walk1_id = int(request.form["walk1"])
+    walk2_id = int(request.form["walk2"])
+    walk1_embedding = get_walk_embedding(walk1_id)
+    walk2_embedding = get_walk_embedding(walk2_id)
+    similarity = cosine_similarity(walk1_embedding, walk2_embedding).mean()
+    # TODO: Return stddev
     # Compute similarity score
-    return compare_page(similarity=0.9)
+    # TODO: adjust selected walks to the ones used for calculation in frontend
+    return compare_page(similarity=similarity)
 
 
 @app.route("/upload", methods=["POST"])
@@ -91,10 +119,12 @@ def upload_recording():
     # `request.form[sensor]` variable contains form data for each sensor type
     # TODO: Check validity of data in backend
     # TODO: Output success message once uploaded
-    user_id, walk_id = commit_recording_to_db(request.form)
+    walk_id = commit_recording_to_db(request.form)
     return compare_page()
 
 
 if __name__ == "__main__":
     # Using a self-signed cert for SSL; need for sensor APIs to work
-    app.run(host="0.0.0.0", debug=True, ssl_context=("cert.pem", "key.pem"))
+    # app.run(host="0.0.0.0", debug=False, ssl_context=("cert.pem", "key.pem"))
+    # With nginx+gunicorn:
+    app.run()

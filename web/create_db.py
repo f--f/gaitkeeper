@@ -2,17 +2,19 @@
 Script to bootstrap PostgreSQL database with necessary tables.
 
 Before running this, create a new database in the CLI:
-    createdb -U postgres gaitkeeper
+    createdb [-h hostname] -U postgres gaitkeeper
 """
 
 import psycopg2
 from getpass import getpass
+import sys
 
 
-def connect_to_db(database, user):
+def connect_to_db(host, database, user):
     """Return a PostgreSQL database connection."""
     try:
-        conn = psycopg2.connect(database=database,
+        conn = psycopg2.connect(host=host,
+                        database=database,
                         user=user,
                         password=getpass(f"Enter password for user [{user}]: "))
         return conn
@@ -60,5 +62,7 @@ def initialize_tables(conn):
 
 
 if __name__ == "__main__":
-    conn = connect_to_db("gaitkeeper", "postgres")
+    # Read first argument as db hostname
+    host = sys.argv[1] if len(sys.argv) >= 1 else None
+    conn = connect_to_db(host, "gaitkeeper", "postgres")
     initialize_tables(conn)

@@ -11,9 +11,9 @@
       <label class="label">Walk 1</label>
       <div class="control">
         <div class="select is-fullwidth">
-          <select>
-            {% for walk_name in walk_names %} 
-              <option>{{ walk_name }}</option>
+          <select name="walk1" id="walk1">
+            {% for walk_id, walk_name in walk_dict.items() %} 
+              <option value="{{ walk_id }}">{{ walk_name }}</option>
             {% endfor %} 
           </select>
         </div>
@@ -23,10 +23,10 @@
       <label class="label">Walk 2</label>
       <div class="control">
         <div class="select is-fullwidth">
-          <select>
-            {% for walk_name in walk_names %} 
-              <option>{{ walk_name }}</option>
-            {% endfor %} 
+          <select name="walk2" id="walk2">
+            {% for walk_id, walk_name in walk_dict.items() %} 
+              <option value="{{ walk_id }}">{{ walk_name }}</option>
+            {% endfor %}
           </select>
         </div>
       </div>
@@ -50,8 +50,6 @@
         value: '',
         alignToBottom: false
       },
-      from: {color: '#FFEA82'},
-      to: {color: '#48c774'},
       // Set default step function for all animate calls
       step: (state, bar) => {
         bar.path.setAttribute('stroke', state.color);
@@ -65,8 +63,14 @@
       }
     })
     bar.text.style.fontSize = '2rem';
-    {% if similarity %}
-      bar.animate({{ similarity }})
+    {% if similarity and similarity >= 0.8 %}
+      bar.animate({{ similarity }},
+        {from: {color: '#FFEA82'}, to: {color: '#48c774'}}
+      )
+    {% elif similarity and similarity < 0.8 %}
+    bar.animate({{ similarity }},
+        {from: {color: '#FFEA82'}, to: {color: '#FFEA82'}}
+      )
     {% endif %}
   </script>
 {% endblock %}
