@@ -92,13 +92,16 @@ def record_page():
 
 
 @app.route("/compare", methods=["GET"])
-def compare_page(similarity=None):
+def compare_page(similarity=None, selected_walk_ids=None):
     # Get list of recorded walks
     df_walks = pd.read_sql_query(f"SELECT * FROM walks ORDER BY walk_id DESC", conn).set_index("walk_id")
     df_walks = df_walks[df_walks["name"] != ""]  # Ignore walks with no name
     df_walks["frontend_name"] = df_walks["date"].astype(str) + " - " + df_walks["name"]
+    if selected_walk_ids is None:  # If walks were not selected, choose first walk_id in list
+        selected_walk_ids = (df_walks.index[0], df_walks.index[0])
     return render_template("compare.html", 
         walk_dict=df_walks["frontend_name"].to_dict(),
+        selected_walk_ids=selected_walk_ids,
         similarity=similarity
     )
 
@@ -111,9 +114,7 @@ def calculate_similarity():
     walk2_embedding = get_walk_embedding(walk2_id)
     similarity = cosine_similarity(walk1_embedding, walk2_embedding).mean()
     # TODO: Return stddev
-    # Compute similarity score
-    # TODO: adjust selected walks to the ones used for calculation in frontend
-    return compare_page(similarity=similarity)
+    return compare_page(similarity=similarity, selected_walk_ids=(walk1_id, walk2_id))
 
 
 @app.route("/upload", methods=["POST"])

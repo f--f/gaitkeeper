@@ -13,7 +13,7 @@
         <div class="select is-fullwidth">
           <select name="walk1" id="walk1">
             {% for walk_id, walk_name in walk_dict.items() %} 
-              <option value="{{ walk_id }}">{{ walk_name }}</option>
+              <option value="{{ walk_id }}" {% if walk_id == selected_walk_ids[0] %}selected{% endif %}>{{ walk_name }}</option>
             {% endfor %} 
           </select>
         </div>
@@ -25,7 +25,7 @@
         <div class="select is-fullwidth">
           <select name="walk2" id="walk2">
             {% for walk_id, walk_name in walk_dict.items() %} 
-              <option value="{{ walk_id }}">{{ walk_name }}</option>
+              <option value="{{ walk_id }}" {% if walk_id == selected_walk_ids[1] %}selected{% endif %}>{{ walk_name }}</option>
             {% endfor %}
           </select>
         </div>
