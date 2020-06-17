@@ -18,7 +18,7 @@
   <!-- TODO: Add warning if user agent is not mobile Google Chrome. -->
   <section class="section">
     <div class="container">
-    <h1 class="title"><span class="mdi mdi-walk"></span>G<span style="font-variant:small-caps">ai</span>tkeeper</h1>
+    <h1 class="title" id="title"><span class="mdi mdi-walk"></span>G<span style="font-variant:small-caps">ai</span>tkeeper</h1>
     <h2 class="subtitle">authenticate with your walk</h2>
     
     <div class="tabs is-centered is-boxed">
@@ -54,7 +54,49 @@
     </p>
     </div>
   </section>
+  <script>
+    // Check if sensors are supported
+    var isSensorSupported = true
+    try {
+      for (let sensor of [
+        new LinearAccelerationSensor({ frequency: 60 }),
+        new Gyroscope({ frequency: 60 })
+      ]) {
+        sensor.onerror = event => {
+          if (isSensorSupported) {
+            isSensorSupported = false
+            console.log("Sensor support not found.")
+            showMissingSensorNotification()
+          }
+        }
+        sensor.start()
+      }
+    } catch(error) {
+      isSensorSupported = false
+      console.log("Sensor support not found.")
+      showMissingSensorNotification()
+    }
 
+    // Add notification for missing sensors
+    function showMissingSensorNotification() {
+      const title = document.getElementById("title")
+      title.insertAdjacentHTML("beforebegin", 
+        `<div class="notification is-danger is-light" id="sensorMissing">
+            <button class="delete"></button>
+            <strong>Warning:</strong> your device or browser is unsupported and certain features (such as recording your walk) will not work. 
+            For full functionality, please view this page on a phone or other mobile device with 
+            <a href="https://developer.mozilla.org/en-US/docs/Web/API/Sensor_APIs#Browser_compatibility" target="_blank" rel="noopener">a Web Sensor-supported browser</a> (e.g. <i>Google Chrome</i>).
+          </div>
+        `);
+      // Bind (x) button to close the notification
+      (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+        $notification = $delete.parentNode;
+        $delete.addEventListener('click', () => {
+          $notification.parentNode.removeChild($notification);
+        });
+      });
+    }
+  </script>
 </body>
 
 </html>
