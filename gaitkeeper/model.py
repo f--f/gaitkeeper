@@ -1,2 +1,0 @@
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics.pairwise import cosine_similarity
