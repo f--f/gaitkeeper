@@ -4,14 +4,19 @@ from scipy.fft import fft
 from scipy.signal import find_peaks
 from tqdm.auto import tqdm
 
-from .load import get_reference_data, IDNET_PATH
-
-f_s = 60  # Sampling rate of 60 Hz
+from .load import get_reference_data
+from .constants import f_s, IDNET_PATH
 
 def generate_walk_chunks(df, chunksize=512, window_step=256, is_valid=True):
-    """Split df into multiple chunks of data. If is_valid is True, only yields non-NAN data (e.g. ignores sensor skips).
-    Chunk size recommended to be power-of-2 for downstream FFT: https://www.oreilly.com/library/view/elegant-scipy/9781491922927/ch04.html
-    window_step controls the amount the window slides (if equal chunksize, then no overlaps between chunks.)
+    """Split an input DataFrame into multiple chunks of data. 
+    Arguments:
+        df: input DataFrame to split
+        chunksize: number of rows for each output chunk.
+            Recommended to be power-of-2 if doing downstream FFT.
+        window_step: sliding window size (set less than chunksize for overlaps)
+        is_valid: if True, this yields only non-NAN data (any chunks with skips are ignored)
+    Yields:
+        subdf: chunks of the original DataFrame.
     """
     assert window_step <= chunksize
     count = 0
@@ -82,7 +87,7 @@ def create_reference_data_features_from_fft_peaks(n_peaks=10):
     return df_features
 
 
-def create_fft_peak_features_from_chunk(chunk, n_peaks):
+def create_fft_peak_features_from_chunk(chunk, n_peaks, f_s=60):
     norm_acc = normalize_sensor_data(chunk, "linearaccelerometer")
     norm_gyro = normalize_sensor_data(chunk, "gyroscope")
     f_acc, fft_acc = get_fft(norm_acc, f_s)
