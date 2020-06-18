@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 from scipy.fft import fft
 from scipy.signal import find_peaks
-
-from load import get_reference_data, IDNET_PATH
 from tqdm.auto import tqdm
+
+from .load import get_reference_data, IDNET_PATH
 
 f_s = 60  # Sampling rate of 60 Hz
 
@@ -13,12 +13,12 @@ def generate_walk_chunks(df, chunksize=512, window_step=256, is_valid=True):
     Chunk size recommended to be power-of-2 for downstream FFT: https://www.oreilly.com/library/view/elegant-scipy/9781491922927/ch04.html
     window_step controls the amount the window slides (if equal chunksize, then no overlaps between chunks.)
     """
-    assert window_step < chunksize
+    assert window_step <= chunksize
     count = 0
     while count < (len(df) - chunksize):  # While there are still chunksize rows remaining
         subdf = df.iloc[count:count + chunksize, :]
         if len(subdf) == chunksize and not subdf.isna().any(axis=None):  # Return only non-NA
-            yield subdf
+            yield subdf.reset_index().copy()
         count += window_step
 
 
