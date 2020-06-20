@@ -3,12 +3,10 @@ import torch.nn.functional as F
 import torch
 import numpy as np
 
-EMBEDDING_SIZE = 20  # Size of output embedding
 
-
-def load_embedding_model(pt_file):
+def load_embedding_model(pt_file, embedding_size):
     """Return an EmbeddingNet model with saved model weights, usable for inference only."""
-    model = EmbeddingNet()
+    model = EmbeddingNet(embedding_size)
     # Explicitly map CUDA-trained models to CPU otherwise this will raise an error
     model.load_state_dict(torch.load(pt_file, map_location=torch.device('cpu')))
     model.eval()
@@ -20,14 +18,15 @@ def extract_embeddings(dataloader, model):
     model = model.cpu()
     with torch.no_grad():
         model.eval()
-        embeddings = np.zeros((len(dataloader.dataset), EMBEDDING_SIZE))
+        embedding_size = list(model.children())[-1].out_features
+        embeddings = np.zeros((len(dataloader.dataset), embedding_size))
         labels = np.zeros(len(dataloader.dataset))
         count = 0
         for input_data, target in dataloader:
             embeddings[count:count+len(input_data), :] = model.get_embedding(input_data).data.cpu().numpy()
             labels[count:count+len(input_data)] = target.numpy()
             count += len(input_data)
-    return embeddings
+    return embeddings, labels
 
 
 class GaitDataset(torch.utils.data.Dataset):
@@ -66,7 +65,7 @@ class GaitDataset(torch.utils.data.Dataset):
 
 class EmbeddingNet(nn.Module):
     """Model definition for outputting a lower-dimensional embedding."""
-    def __init__(self):
+    def __init__(self, embedding_size):
         super().__init__()
         self.conv1 = nn.Sequential(
             nn.Conv1d(2, 16, 5, padding=2, padding_mode="replicate"), nn.ReLU(),
@@ -79,7 +78,7 @@ class EmbeddingNet(nn.Module):
             nn.MaxPool1d(2),
             nn.Flatten()
         )
-        self.fc = nn.Linear(in_features=32 * 64, out_features=EMBEDDING_SIZE)
+        self.fc = nn.Linear(in_features=32 * 64, out_features=embedding_size)
         
     def forward(self, x):
         conv1 = self.conv1(x)
@@ -106,11 +105,12 @@ class EmbeddingNet(nn.Module):
 class ClassificationNet(nn.Module):
     """Model definition for performing classification using embeddings."""
     def __init__(self, embedding_net, n_classes):
-        super(ClassificationNet, self).__init__()
+        super().__init__()
         self.embedding_net = embedding_net
+        embedding_size = list(embedding_net.children())[-1].out_features
         self.n_classes = n_classes
         self.nonlinear = nn.ReLU()
-        self.fc1 = nn.Linear(EMBEDDING_SIZE, n_classes)
+        self.fc1 = nn.Linear(embedding_size, n_classes)
 
     def forward(self, x):
         output = self.embedding_net(x)
@@ -147,9 +147,7 @@ def train_epoch(train_loader, model, loss_criterion, optimizer, device):
         loss.backward()
         # perform parameter update based on current gradients
         optimizer.step()
-        # update running loss
         total_loss += loss.item()
-        # compute accuracy
         accuracy += (out.argmax(dim=1) == target).sum().item()
         total += target.size(0)
     accuracy /= total
@@ -177,9 +175,7 @@ def test_epoch(test_loader, model, loss_criterion, device):
             target = target.to(device)
             out = model(data)
             loss = loss_criterion(out, target)
-            # update running loss
             total_loss += loss.item()
-            # compute accuracy
             accuracy += (out.argmax(dim=1) == target).sum().item()
             total += target.size(0)
         accuracy /= total

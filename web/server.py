@@ -26,7 +26,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # Pre-app initialization (load relevant data into memory):
 host = os.getenv("GAITKEEPER_DB_HOST", "localhost")
-model = models.load_embedding_model("../models/Classification-trained_EmbeddingNet.pt")
+model = models.load_embedding_model("../models/Classification-trained_EmbeddingNet.pt", 20)
 conn = connect_to_db(host, "gaitkeeper", "postgres", os.getenv("GAITKEEPER_DB_PASSWORD", None))
 
 # Create the application object
@@ -78,7 +78,7 @@ def get_walk_embedding(walk_id):
     chunks = list(generate_walk_chunks(df, chunksize=128, window_step=128))
     dataset = models.GaitDataset(chunks)
     dataloader = DataLoader(dataset, batch_size=64)
-    return models.extract_embeddings(dataloader, model)
+    return models.extract_embeddings(dataloader, model)[0]
 
 
 @app.route("/", methods=["GET"])
