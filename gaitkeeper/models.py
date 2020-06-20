@@ -120,3 +120,68 @@ class ClassificationNet(nn.Module):
 
     def get_embedding(self, x):
         return self.nonlinear(self.embedding_net(x))
+    
+
+def train_epoch(train_loader, model, loss_criterion, optimizer, device):
+    """Run a single training epoch (update weights based on loss function).
+    Arguments:
+        train_loader: training DataLoader
+        model: PyTorch model object
+        loss_criterion: loss function
+        optimizer: optimizer
+        device: device to put inputs from dataset on (should match model)
+    Returns:
+        loss: the loss at the end of the epoch
+    """
+    model.train()
+    total_loss = 0  # for computing accuracy 
+    accuracy = 0
+    total = 0
+    for i, (data, target) in enumerate(train_loader):
+        data = data.to(device)
+        target = target.to(device)
+        optimizer.zero_grad()
+        out = model(data)
+        loss = loss_criterion(out, target)
+        # compute accumulated gradients
+        loss.backward()
+        # perform parameter update based on current gradients
+        optimizer.step()
+        # update running loss
+        total_loss += loss.item()
+        # compute accuracy
+        accuracy += (out.argmax(dim=1) == target).sum().item()
+        total += target.size(0)
+    accuracy /= total
+    total_loss /= len(train_loader)
+    return loss, accuracy
+
+
+def test_epoch(test_loader, model, loss_criterion, device):
+    """Run a single validation epoch (run model in inference without updating weights).
+    Arguments:
+        test_loader: test DataLoader
+        model: PyTorch model object
+        loss_criterion: loss function
+        device: device to put inputs from dataset on (should match model)
+    Returns:
+        loss: the loss at the end of the epoch
+    """
+    total_loss = 0  # for computing accuracy 
+    accuracy = 0
+    total = 0
+    with torch.no_grad():
+        model.eval()
+        for i, (data, target) in enumerate(test_loader):
+            data = data.to(device)
+            target = target.to(device)
+            out = model(data)
+            loss = loss_criterion(out, target)
+            # update running loss
+            total_loss += loss.item()
+            # compute accuracy
+            accuracy += (out.argmax(dim=1) == target).sum().item()
+            total += target.size(0)
+        accuracy /= total
+        total_loss /= len(test_loader)
+        return loss, accuracy
