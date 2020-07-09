@@ -93,6 +93,10 @@ def record_page():
 
 @app.route("/compare", methods=["GET"])
 def compare_page(similarity=None, selected_walk_ids=None):
+    # Check if db connection is closed (may time out)
+    global conn
+    if conn.closed:
+        conn = connect_to_db(host, "gaitkeeper", "postgres", os.getenv("GAITKEEPER_DB_PASSWORD", None))
     # Get list of recorded walks
     df_walks = pd.read_sql_query(f"SELECT * FROM walks ORDER BY walk_id DESC", conn).set_index("walk_id")
     df_walks = df_walks[df_walks["name"] != ""]  # Ignore walks with no name
