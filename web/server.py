@@ -13,14 +13,10 @@ import pandas as pd
 import json
 from datetime import datetime
 
-# Use hacky relative module import until I create a proper package
-import os
-import sys
-sys.path.append("../gaitkeeper")
-from load import get_walk_data_from_database
 from torch.utils.data import DataLoader
-from preprocess import generate_walk_chunks
-import models
+from gaitkeeper.load import get_walk_data_from_database
+from gaitkeeper.preprocess import generate_walk_chunks
+from gaitkeeper import models
 from sklearn.metrics.pairwise import cosine_similarity
 
 
